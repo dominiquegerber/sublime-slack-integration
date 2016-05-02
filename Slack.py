@@ -243,17 +243,27 @@ class SendSelectionCommand(BaseSend):
     def run(self, view):
         super(SendSelectionCommand, self).run(view)
         fileName = self.friendly_filename()
+        message = ""
         # get all selected regions
         for region in self.view.sel():
             text = self.view.substr(region)
-            (lineFrom,colFrom) = self.view.rowcol(region.begin())
-            (lineTo,colTo) = self.view.rowcol(region.end())
 
             if not text:
                 sublime.error_message("SLACK Error: No text selected")
                 return
-            self.messages.append(">*File: {0}, Line(s): {1}-{2}*```{3}```".format(fileName,lineFrom,lineTo,text))
 
+            (lineFrom,colFrom) = self.view.rowcol(region.begin())
+            (lineTo,colTo) = self.view.rowcol(region.end())
+
+            if (lineTo != lineFrom and colTo == 0):
+                lineTo = lineTo-1;
+
+            if (lineFrom == lineTo):
+                message += ">*File: {0}, Line: {1}*```{2}```\n".format(fileName,lineFrom,text)
+            else:
+                message += ">*File: {0}, Line(s): {1}-{2}*```{3}```\n".format(fileName,lineFrom,lineTo,text)
+
+        self.messages.append(message)
         threading.Thread(target=self.init_message_send).start()
 
     def friendly_filename(self):
