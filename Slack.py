@@ -242,16 +242,26 @@ class SendSelectionCommand(BaseSend):
     """ Send the selected text to slack. Multiple selections supported """
     def run(self, view):
         super(SendSelectionCommand, self).run(view)
+        fileName = self.friendly_filename()
         # get all selected regions
         for region in self.view.sel():
             text = self.view.substr(region)
+            (lineFrom,colFrom) = self.view.rowcol(region.begin())
+            (lineTo,colTo) = self.view.rowcol(region.end())
 
             if not text:
                 sublime.error_message("SLACK Error: No text selected")
                 return
-            self.messages.append("```{0}```".format(text))
+            self.messages.append(">*File: {0}, Line(s): {1}-{2}*```{3}```".format(fileName,lineFrom,lineTo,text))
 
         threading.Thread(target=self.init_message_send).start()
+
+    def friendly_filename(self):
+        filename = self.view.file_name().split('/').pop()
+        if self.settings.get('repeat_file_ext') and len(filename.split('.')) > 1:
+            filename += '.' + filename.split('.').pop()
+        return filename
+
 
 
 class SendMessageCommand(BaseSend):
